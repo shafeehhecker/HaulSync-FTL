@@ -1,4 +1,4 @@
-# 🚛 HaulSync TOS — Full Truck Load (FTL) Management
+# 🚛 HaulSync — Full Truck Load (FTL) Management
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://www.docker.com/)
@@ -309,4 +309,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgements
 
-Part of the HaulSync open-source logistics ecosystem. Built with ❤️ for the freight community.
+Part of the HaulSync open-source logistics ecosystem. 

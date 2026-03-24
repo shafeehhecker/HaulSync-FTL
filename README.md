@@ -8,7 +8,7 @@
 
 > **A self-hostable FTL Transport Operating System — built on the HaulSync platform. Automates the complete Full Truck Load lifecycle: from truck indenting and RFQ bidding to real-time tracking, digital POD, and final settlement.**
 
-HaulSync TOS FTL is a dedicated module in the HaulSync ecosystem, purpose-built for enterprises, 3PLs, and transport companies that need end-to-end automation of full truckload operations. It ships as a standalone service that integrates seamlessly with the core HaulSync platform via shared infrastructure and APIs.
+HaulSync FTL is a dedicated module in the HaulSync ecosystem, purpose-built for enterprises, 3PLs, and transport companies that need end-to-end automation of full truckload operations. It ships as a standalone service that integrates seamlessly with the core HaulSync platform via shared infrastructure and APIs.
 
 ---
 

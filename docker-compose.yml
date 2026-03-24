@@ -1,0 +1,60 @@
+version: '3.9'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-haulsync}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-haulsync_secret}
+      POSTGRES_DB: ${DB_NAME:-haulsync_ftl}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-haulsync}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-haulsync}:${DB_PASSWORD:-haulsync_secret}@db:5432/${DB_NAME:-haulsync_ftl}
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
+      PORT: 5001
+      NODE_ENV: ${NODE_ENV:-production}
+      GPS_PROVIDER: ${GPS_PROVIDER:-mock}
+      GPS_API_KEY: ${GPS_API_KEY:-}
+      EWAY_CLIENT_ID: ${EWAY_CLIENT_ID:-}
+      EWAY_CLIENT_SECRET: ${EWAY_CLIENT_SECRET:-}
+      EWAY_GSTIN: ${EWAY_GSTIN:-}
+      HAULSYNC_CORE_URL: ${HAULSYNC_CORE_URL:-}
+      HAULSYNC_CORE_API_KEY: ${HAULSYNC_CORE_API_KEY:-}
+    ports:
+      - "5001:5001"
+    volumes:
+      - uploads_data:/app/uploads
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:5001}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3001:80"
+
+volumes:
+  postgres_data:
+  uploads_data:

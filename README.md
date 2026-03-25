@@ -312,7 +312,7 @@ Set `HAULSYNC_CORE_URL` in `.env` to enable integrated mode.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Contributions are welcome but AI generated PRs are discouraged . Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 ```bash
 # Fork the repo, then:

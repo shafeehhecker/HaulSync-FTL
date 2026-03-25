@@ -32,41 +32,67 @@ HaulSync FTL is a dedicated module in the HaulSync ecosystem, purpose-built for 
 
 ## 🏗️ Architecture
 
-This repo follows the same monorepo structure as the core HaulSync platform.
-
 ```
 haulsync-tos-ftl/
-├── backend/                    # Node.js + Express + Prisma API
+├── backend/
 │   ├── src/
-│   │   ├── modules/
-│   │   │   ├── indenting/      # Indent creation, contract rules engine
-│   │   │   ├── rfq/            # RFQ lifecycle, bid management, L1/L2 engine
-│   │   │   ├── tracking/       # GPS adapter layer, geofence, ETA engine
-│   │   │   ├── exceptions/     # AI alert engine, SLA monitoring
-│   │   │   ├── pod/            # POD capture, LR generation, e-way bill
-│   │   │   ├── billing/        # Invoice generation, freight reconciliation
-│   │   │   └── settlement/     # Payment triggers, ledger management
+│   │   ├── routes/
+│   │   │   ├── indents.js       # Indent creation & management
+│   │   │   ├── rfq.js           # RFQ lifecycle, L1/L2 engine
+│   │   │   ├── tracking.js      # GPS events, trip status
+│   │   │   ├── exceptions.js    # Exception raise/resolve
+│   │   │   ├── pod.js           # POD capture, image upload
+│   │   │   ├── billing.js       # Invoice & reconciliation
+│   │   │   ├── settlement.js    # Payment settlement
+│   │   │   ├── analytics.js     # FTL KPIs & charts
+│   │   │   ├── fleet.js         # Vehicles & drivers
+│   │   │   ├── companies.js     # Vendor/shipper master
+│   │   │   ├── users.js         # User management
+│   │   │   └── auth.js          # Login, JWT
 │   │   ├── integrations/
-│   │   │   ├── gps/            # Adapters for 60+ GPS providers
-│   │   │   ├── eway/           # NIC e-way bill API integration
-│   │   │   └── payments/       # Payment gateway connectors
-│   │   └── shared/             # Middleware, utils, base models
-│   └── prisma/
-│       ├── schema.prisma
-│       └── seed.js
-├── frontend/                   # React + Vite + Tailwind SPA
+│   │   │   ├── gps/             # Pluggable GPS adapters
+│   │   │   └── eway/            # NIC e-way bill client
+│   │   ├── lib/
+│   │   │   └── gpsAdapter.js    # GPS provider abstraction
+│   │   └── middleware/
+│   │       ├── auth.js
+│   │       └── errorHandler.js
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   └── seed.js
+│   ├── uploads/pods/            # POD image storage
+│   ├── server.js
+│   ├── package.json
+│   └── Dockerfile
+├── frontend/
 │   └── src/
 │       ├── pages/
+│       │   ├── Dashboard.jsx
+│       │   ├── Login.jsx
 │       │   ├── Indenting/
 │       │   ├── RFQ/
 │       │   ├── Tracking/
+│       │   ├── Exceptions/
 │       │   ├── POD/
 │       │   ├── Billing/
+│       │   ├── Settlement/
 │       │   └── Analytics/
-│       └── components/
-├── docs/                       # Architecture & API documentation
+│       ├── components/
+│       │   ├── Layout/
+│       │   └── common/
+│       ├── api/client.js
+│       └── context/AuthContext.jsx
+├── docs/
+│   ├── API.md
+│   ├── ARCHITECTURE.md
+│   ├── DEPLOYMENT.md
+│   ├── GPS_INTEGRATION.md
+│   ├── RATE_ENGINE.md
+│   └── EWAY_BILL.md
 ├── docker-compose.yml
-└── .env.example
+├── .env.example
+├── CONTRIBUTING.md
+└── LICENSE
 ```
 
 **Tech Stack** — identical to the core HaulSync platform:
@@ -158,27 +184,26 @@ HAULSYNC_CORE_API_KEY=your-core-api-key
 docker compose up -d
 ```
 
-### 4. Run database migrations & seed
+The backend automatically runs migrations and seeds on first boot.
 
-```bash
-docker compose exec backend npx prisma migrate deploy
-docker compose exec backend node prisma/seed.js
-```
-
-### 5. Access the app
+### 4. Access the app
 
 - **Frontend**: http://localhost:3001
 - **Backend API**: http://localhost:5001
-- **Default login**: `admin@haulsync.local` / `Admin@1234`
+- **Health check**: http://localhost:5001/health
+
+### Default credentials
+
+| Email | Password | Role |
+|-------|----------|------|
+| `admin@haulsync.local` | `Admin@1234` | SUPER_ADMIN |
+| `manager@haulsync.local` | `Mgr@1234` | MANAGER |
+| `finance@haulsync.local` | `Finance@1234` | FINANCE |
+| `transporter@haulsync.local` | `Trans@1234` | TRANSPORTER |
 
 ---
 
 ## 🛠️ Manual Setup (Development)
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 15+
-- npm or yarn
 
 ### Backend
 
@@ -206,7 +231,7 @@ npm run dev
 
 ## 🔌 GPS Provider Integrations
 
-HaulSync TOS FTL ships with a pluggable GPS adapter layer. Supported providers out of the box:
+HaulSync TOS FTL ships with a pluggable GPS adapter layer (`backend/src/lib/gpsAdapter.js`). Supported providers out of the box:
 
 | Provider | Status |
 |----------|--------|
@@ -229,7 +254,7 @@ The rate engine ranks vendor bids and awards automatically. Configuration is per
 ```json
 {
   "lane": "MUM-DEL",
-  "truckType": "32FT_SXL",
+  "truckType": "TRUCK_32FT_SXL",
   "eligibilityFilters": {
     "minSLAScore": 75,
     "approvedVendorsOnly": true,
@@ -241,7 +266,9 @@ The rate engine ranks vendor bids and awards automatically. Configuration is per
 }
 ```
 
-Award strategies supported: `L1_AUTO`, `L1_MANUAL_APPROVAL`, `NEGOTIATED`, `CONTRACT_RATE`.
+Award strategies: `L1_AUTO`, `L1_MANUAL_APPROVAL`, `NEGOTIATED`, `CONTRACT_RATE`.
+
+See [L1/L2 Engine Configuration](docs/RATE_ENGINE.md) for full reference.
 
 ---
 
@@ -265,11 +292,7 @@ HaulSync TOS FTL is designed to run standalone or as part of the broader HaulSyn
 
 **Standalone mode**: Uses its own user, vendor, and vehicle master. Fully self-contained.
 
-**Integrated mode**: Connects to a running HaulSync core instance to share:
-- Transporter / broker master data
-- Vehicle and driver registry
-- Route and location masters
-- User accounts and RBAC (single sign-on via shared JWT)
+**Integrated mode**: Connects to a running HaulSync core instance to share transporter/broker master data, vehicle and driver registry, route and location masters, and user accounts with RBAC via shared JWT.
 
 Set `HAULSYNC_CORE_URL` in `.env` to enable integrated mode.
 
@@ -309,4 +332,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgements
 
-Part of the HaulSync open-source logistics ecosystem. 
+Part of the HaulSync open-source logistics ecosystem. Built with ❤️ for the freight community.

@@ -332,4 +332,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgements
 
-Part of the HaulSync open-source logistics ecosystem. Built with ❤️ for the freight community.
+Part of the HaulSync open-source logistics ecosystem. Built to democratise tech for logistics.

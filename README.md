@@ -312,7 +312,7 @@ Set `HAULSYNC_CORE_URL` in `.env` to enable integrated mode.
 
 ## 🤝 Contributing
 
-Contributions are welcome but AI generated PRs are discouraged . Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
+Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) first.
 
 ```bash
 # Fork the repo, then:
@@ -332,4 +332,4 @@ MIT License — see [LICENSE](LICENSE) for details.
 
 ## 🙏 Acknowledgements
 
-Part of the HaulSync open-source logistics ecosystem. Built to democratise tech for logistics.
+Part of the HaulSync open-source logistics ecosystem. Built with ❤️ for the freight community.

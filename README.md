@@ -11,6 +11,8 @@
 HaulSync FTL is a dedicated module in the HaulSync ecosystem, purpose-built for enterprises, 3PLs, and transport companies that need end-to-end automation of full truckload operations. It ships as a standalone service that integrates seamlessly with the core HaulSync platform via shared infrastructure and APIs.
 
 ---
+<img width="2552" height="1405" alt="image" src="https://github.com/user-attachments/assets/f043b602-af02-4f5e-8048-46352cacc674" />
+
 
 ## ✨ FTL Module Overview
 

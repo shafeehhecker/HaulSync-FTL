@@ -13,9 +13,9 @@
 └──────────┬─────────────────────────┬────────────────┘
            │ /api/*                  │ /
 ┌──────────▼──────────┐   ┌──────────▼──────────────┐
-│   Express API        │   │   Static Frontend        │
-│   Node.js 18         │   │   (Vite build)           │
-│   port 5001          │   └─────────────────────────┘
+│   Express API        │  │   Static Frontend       │
+│   Node.js 18         │  │   (Vite build)          │
+│   port 5001          │  └─────────────────────────┘
 │                      │
 │   Routes             │
 │   ├─ /ftl/indents    │

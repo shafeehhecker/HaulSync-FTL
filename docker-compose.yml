@@ -1,13 +1,15 @@
 version: '3.9'
 
 services:
+
+  # ── PostgreSQL ───────────────────────────────────────────────────────────────
   db:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-haulsync}
+      POSTGRES_USER:     ${DB_USER:-haulsync}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-haulsync_secret}
-      POSTGRES_DB: ${DB_NAME:-haulsync_ftl}
+      POSTGRES_DB:       ${DB_NAME:-haulsync_ftl}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -16,8 +18,9 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-haulsync}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
+  # ── Backend API ──────────────────────────────────────────────────────────────
   backend:
     build:
       context: ./backend
@@ -27,22 +30,29 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://${DB_USER:-haulsync}:${DB_PASSWORD:-haulsync_secret}@db:5432/${DB_NAME:-haulsync_ftl}
-      JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
-      PORT: 5001
-      NODE_ENV: ${NODE_ENV:-production}
-      GPS_PROVIDER: ${GPS_PROVIDER:-mock}
-      GPS_API_KEY: ${GPS_API_KEY:-}
-      EWAY_CLIENT_ID: ${EWAY_CLIENT_ID:-}
+      DATABASE_URL:       postgresql://${DB_USER:-haulsync}:${DB_PASSWORD:-haulsync_secret}@db:5432/${DB_NAME:-haulsync_ftl}
+      JWT_SECRET:         ${JWT_SECRET:-change_me_in_production_32chars}
+      JWT_EXPIRES_IN:     ${JWT_EXPIRES_IN:-7d}
+      PORT:               5001
+      NODE_ENV:           ${NODE_ENV:-production}
+      FRONTEND_URL:       ${FRONTEND_URL:-http://localhost:3001,http://localhost:5174}
+      GPS_PROVIDER:       ${GPS_PROVIDER:-mock}
+      GPS_API_KEY:        ${GPS_API_KEY:-}
+      GPS_WEBHOOK_SECRET: ${GPS_WEBHOOK_SECRET:-}
+      EWAY_CLIENT_ID:     ${EWAY_CLIENT_ID:-}
       EWAY_CLIENT_SECRET: ${EWAY_CLIENT_SECRET:-}
-      EWAY_GSTIN: ${EWAY_GSTIN:-}
-      HAULSYNC_CORE_URL: ${HAULSYNC_CORE_URL:-}
-      HAULSYNC_CORE_API_KEY: ${HAULSYNC_CORE_API_KEY:-}
+      EWAY_GSTIN:         ${EWAY_GSTIN:-}
+      HAULSYNC_CORE_URL:      ${HAULSYNC_CORE_URL:-}
+      HAULSYNC_CORE_API_KEY:  ${HAULSYNC_CORE_API_KEY:-}
     ports:
       - "5001:5001"
     volumes:
       - uploads_data:/app/uploads
+    command: >
+      sh -c "npx prisma migrate deploy && node prisma/seed.js && node server.js"
+    # seed.js uses upsert everywhere — safe to re-run on container restart
 
+  # ── Frontend ─────────────────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend

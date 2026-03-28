@@ -57,6 +57,8 @@ test: add unit tests for L1/L2 ranking logic
 5. Open a PR — fill in the template fully
 6. PRs require at least one review before merge
 
+ IMPORTANT NOTE : AI PULL REQUESTS IS HIGHLY DISCOURAGED AS THIS IS A SINGLE DEVELOPER PROJECT
+
 ---
 
 ## 📁 Where Things Live

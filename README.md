@@ -4,7 +4,7 @@
 [![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://www.docker.com/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![Part of HaulSync](https://img.shields.io/badge/HaulSync-TOS%20Module-6C47FF)](https://github.com/your-org/haulsync)
+[![Part of HaulSync](https://img.shields.io/badge/HaulSync-TOS%20Module-6C47FF)](https://github.com/shafeehhecker/HaulSync)
 
 > **A self-hostable FTL Transport Operating System — built on the HaulSync platform. Automates the complete Full Truck Load lifecycle: from truck indenting and RFQ bidding to real-time tracking, digital POD, and final settlement.**
 

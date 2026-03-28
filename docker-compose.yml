@@ -1,15 +1,12 @@
-version: '3.9'
-
 services:
-
   # ── PostgreSQL ───────────────────────────────────────────────────────────────
   db:
     image: postgres:15-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER:     ${DB_USER:-haulsync}
+      POSTGRES_USER: ${DB_USER:-haulsync}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-haulsync_secret}
-      POSTGRES_DB:       ${DB_NAME:-haulsync_ftl}
+      POSTGRES_DB: ${DB_NAME:-haulsync_ftl}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -30,38 +27,59 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL:       postgresql://${DB_USER:-haulsync}:${DB_PASSWORD:-haulsync_secret}@db:5432/${DB_NAME:-haulsync_ftl}
-      JWT_SECRET:         ${JWT_SECRET:-change_me_in_production_32chars}
-      JWT_EXPIRES_IN:     ${JWT_EXPIRES_IN:-7d}
-      PORT:               5001
-      NODE_ENV:           ${NODE_ENV:-production}
-      FRONTEND_URL:       ${FRONTEND_URL:-http://localhost:3001,http://localhost:5174}
-      GPS_PROVIDER:       ${GPS_PROVIDER:-mock}
-      GPS_API_KEY:        ${GPS_API_KEY:-}
+      DATABASE_URL: postgresql://${DB_USER:-haulsync}:${DB_PASSWORD:-haulsync_secret}@db:5432/${DB_NAME:-haulsync_ftl}
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production_32chars}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      PORT: 5001
+      NODE_ENV: ${NODE_ENV:-production}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3001,http://localhost:5174}
+      GPS_PROVIDER: ${GPS_PROVIDER:-mock}
+      GPS_API_KEY: ${GPS_API_KEY:-}
       GPS_WEBHOOK_SECRET: ${GPS_WEBHOOK_SECRET:-}
-      EWAY_CLIENT_ID:     ${EWAY_CLIENT_ID:-}
+      EWAY_CLIENT_ID: ${EWAY_CLIENT_ID:-}
       EWAY_CLIENT_SECRET: ${EWAY_CLIENT_SECRET:-}
-      EWAY_GSTIN:         ${EWAY_GSTIN:-}
-      HAULSYNC_CORE_URL:      ${HAULSYNC_CORE_URL:-}
-      HAULSYNC_CORE_API_KEY:  ${HAULSYNC_CORE_API_KEY:-}
+      EWAY_GSTIN: ${EWAY_GSTIN:-}
+      HAULSYNC_CORE_URL: ${HAULSYNC_CORE_URL:-}
+      HAULSYNC_CORE_API_KEY: ${HAULSYNC_CORE_API_KEY:-}
     ports:
       - "5001:5001"
     volumes:
       - uploads_data:/app/uploads
+    # FIX 1: Use `migrate dev` so it creates migrations/ if they don't exist yet.
+    #        Falls back to `migrate deploy` on subsequent runs (idempotent).
+    #        Seed is guarded inside seed.js — safe to re-run.
     command: >
-      sh -c "npx prisma migrate deploy && node prisma/seed.js && node server.js"
-    # seed.js uses upsert everywhere — safe to re-run on container restart
+      sh -c "
+        if [ ! -d 'prisma/migrations' ] || [ -z \"$(ls -A prisma/migrations 2>/dev/null)\" ]; then
+          echo '>>> No migrations found — running prisma migrate dev to create them...' &&
+          npx prisma migrate dev --name init --skip-seed;
+        else
+          echo '>>> Migrations found — running prisma migrate deploy...' &&
+          npx prisma migrate deploy;
+        fi &&
+        node prisma/seed.js &&
+        node server.js
+      "
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'node -e "require(''http'').get(''http://localhost:5001/health'', r => process.exit(r.statusCode === 200 ? 0 : 1)).on(''error'', () => process.exit(1))"',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 90s
 
   # ── Frontend ─────────────────────────────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:5001}
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "3001:80"
 

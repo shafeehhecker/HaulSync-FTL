@@ -1,0 +1,499 @@
+// HaulSync TOS FTL — Prisma Schema
+// PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── USER & AUTH ─────────────────────────────────────────────────────────────
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  MANAGER
+  OPERATOR
+  FINANCE
+  VIEWER
+  TRANSPORTER
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(OPERATOR)
+  phone     String?
+  isActive  Boolean  @default(true)
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  indentsCreated Indent[]    @relation("IndentCreatedBy")
+  rfqsCreated    FtlRFQ[]    @relation("RFQCreatedBy")
+  bidsSubmitted  VendorBid[] @relation("BidSubmittedBy")
+  tripsCreated   FtlTrip[]   @relation("TripCreatedBy")
+  activityLogs   ActivityLog[]
+
+  @@map("users")
+}
+
+// ── MASTERS ──────────────────────────────────────────────────────────────────
+
+enum CompanyType {
+  SHIPPER
+  TRANSPORTER
+  BROKER
+  CONSIGNEE
+  BOTH
+}
+
+model Company {
+  id            String      @id @default(uuid())
+  name          String
+  type          CompanyType
+  gstin         String?
+  pan           String?
+  address       String?
+  city          String?
+  state         String?
+  pincode       String?
+  phone         String?
+  email         String?
+  contactPerson String?
+  slaScore      Float       @default(80.0)
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  users       User[]
+  vehicles    Vehicle[]
+  drivers     Driver[]
+  bids        VendorBid[]
+  trips       FtlTrip[]    @relation("TripVendor")
+  invoices    FtlInvoice[]
+  settlements Settlement[]
+
+  @@map("companies")
+}
+
+enum VehicleType {
+  TRUCK_20FT_SXL
+  TRUCK_20FT_MXL
+  TRUCK_32FT_SXL
+  TRUCK_32FT_MXL
+  CONTAINER_20FT
+  CONTAINER_40FT
+  FLATBED
+  REFRIGERATED
+  TANKER
+  MINI_TRUCK
+}
+
+model Vehicle {
+  id              String      @id @default(uuid())
+  registrationNo  String      @unique
+  type            VehicleType
+  capacityTonnes  Float
+  make            String?
+  model           String?
+  year            Int?
+  gpsDeviceId     String?
+  gpsProvider     String?
+  insuranceExpiry DateTime?
+  pucExpiry       DateTime?
+  fitnessExpiry   DateTime?
+  companyId       String?
+  company         Company?    @relation(fields: [companyId], references: [id])
+  isActive        Boolean     @default(true)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  trips FtlTrip[]
+
+  @@map("vehicles")
+}
+
+model Driver {
+  id               String    @id @default(uuid())
+  name             String
+  phone            String    @unique
+  licenseNo        String    @unique
+  licenseExpiry    DateTime?
+  address          String?
+  city             String?
+  emergencyContact String?
+  rating           Float     @default(5.0)
+  totalTrips       Int       @default(0)
+  companyId        String?
+  company          Company?  @relation(fields: [companyId], references: [id])
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  trips FtlTrip[]
+
+  @@map("drivers")
+}
+
+// ── INDENTING ────────────────────────────────────────────────────────────────
+
+enum IndentStatus {
+  DRAFT
+  PENDING
+  RFQ_PUBLISHED
+  AWARDED
+  CANCELLED
+  COMPLETED
+}
+
+enum ContractType {
+  CONTRACT
+  SPOT
+}
+
+model Indent {
+  id           String       @id @default(uuid())
+  indentNumber String       @unique
+  originCity   String
+  originState  String
+  destCity     String
+  destState    String
+  vehicleType  VehicleType
+  quantity     Int          @default(1)
+  weightTonnes Float?
+  contractType ContractType @default(CONTRACT)
+  loadingDate  DateTime
+  notes        String?
+  status       IndentStatus @default(PENDING)
+  createdById  String
+  createdBy    User         @relation("IndentCreatedBy", fields: [createdById], references: [id])
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  rfq  FtlRFQ?
+  trip FtlTrip?
+
+  @@map("indents")
+}
+
+// ── RFQ & L1/L2 BIDDING ──────────────────────────────────────────────────────
+
+enum RFQStatus {
+  OPEN
+  CLOSED
+  AWARDED
+  EXPIRED
+  CANCELLED
+}
+
+enum AwardStrategy {
+  L1_AUTO
+  L1_MANUAL_APPROVAL
+  NEGOTIATED
+  CONTRACT_RATE
+}
+
+model FtlRFQ {
+  id               String        @id @default(uuid())
+  rfqNumber        String        @unique
+  indentId         String?       @unique
+  indent           Indent?       @relation(fields: [indentId], references: [id])
+  originCity       String
+  originState      String
+  destCity         String
+  destState        String
+  vehicleType      VehicleType
+  quantity         Int           @default(1)
+  loadingDate      DateTime
+  awardStrategy    AwardStrategy @default(L1_AUTO)
+  rfqWindowMinutes Int           @default(45)
+  minSLAScore      Float         @default(70)
+  status           RFQStatus     @default(OPEN)
+  closesAt         DateTime
+  awardedBidId     String?       @unique
+  createdById      String
+  createdBy        User          @relation("RFQCreatedBy", fields: [createdById], references: [id])
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  bids       VendorBid[]
+  awardedBid VendorBid?  @relation("AwardedBid", fields: [awardedBidId], references: [id])
+  trip       FtlTrip?
+
+  @@map("ftl_rfqs")
+}
+
+enum BidStatus {
+  PENDING
+  AWARDED
+  STANDBY
+  REJECTED
+  WITHDRAWN
+  EXPIRED
+}
+
+model VendorBid {
+  id            String    @id @default(uuid())
+  rfqId         String
+  rfq           FtlRFQ    @relation(fields: [rfqId], references: [id])
+  vendorId      String
+  vendor        Company   @relation(fields: [vendorId], references: [id])
+  submittedById String
+  submittedBy   User      @relation("BidSubmittedBy", fields: [submittedById], references: [id])
+  rateAmount    Float
+  rank          Int?
+  slaScore      Float     @default(80)
+  notes         String?
+  status        BidStatus @default(PENDING)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  awardedForRFQ FtlRFQ? @relation("AwardedBid")
+
+  @@map("vendor_bids")
+}
+
+// ── FTL TRIP ─────────────────────────────────────────────────────────────────
+
+enum TripStatus {
+  CREATED
+  ASSIGNED
+  AT_PICKUP
+  IN_TRANSIT
+  AT_DELIVERY
+  DELIVERED
+  POD_PENDING
+  POD_CAPTURED
+  COMPLETED
+  CANCELLED
+  DELAYED
+}
+
+model FtlTrip {
+  id               String      @id @default(uuid())
+  tripNumber       String      @unique
+  indentId         String?     @unique
+  indent           Indent?     @relation(fields: [indentId], references: [id])
+  rfqId            String?     @unique
+  rfq              FtlRFQ?     @relation(fields: [rfqId], references: [id])
+  vendorId         String?
+  vendor           Company?    @relation("TripVendor", fields: [vendorId], references: [id])
+  vehicleId        String?
+  vehicle          Vehicle?    @relation(fields: [vehicleId], references: [id])
+  driverId         String?
+  driver           Driver?     @relation(fields: [driverId], references: [id])
+  originCity       String
+  originState      String
+  destCity         String
+  destState        String
+  vehicleType      VehicleType
+  weightTonnes     Float?
+  agreedRate       Float?
+  lrNumber         String?     @unique
+  ewayBillNo       String?
+  ewayBillExpiry   DateTime?
+  loadingDate      DateTime
+  expectedDelivery DateTime?
+  actualDelivery   DateTime?
+  status           TripStatus  @default(CREATED)
+  notes            String?
+  createdById      String
+  createdBy        User        @relation("TripCreatedBy", fields: [createdById], references: [id])
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  trackingEvents TripTrackingEvent[]
+  exceptions     TripException[]
+  pod            TripPOD?
+  invoice        FtlInvoice?
+
+  @@map("ftl_trips")
+}
+
+// ── GPS TRACKING ─────────────────────────────────────────────────────────────
+
+model TripTrackingEvent {
+  id          String   @id @default(uuid())
+  tripId      String
+  trip        FtlTrip  @relation(fields: [tripId], references: [id])
+  eventType   String
+  location    String
+  city        String?
+  state       String?
+  latitude    Float?
+  longitude   Float?
+  speedKmph   Float?
+  gpsProvider String?
+  notes       String?
+  recordedAt  DateTime @default(now())
+
+  @@map("trip_tracking_events")
+}
+
+// ── EXCEPTIONS ───────────────────────────────────────────────────────────────
+
+enum ExceptionType {
+  DELAY
+  DEVIATION
+  SLA_BREACH
+  GPS_LOSS
+  HALT
+  BREAKDOWN
+  OTHER
+}
+
+enum ExceptionSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ExceptionStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+  ESCALATED
+}
+
+model TripException {
+  id           String            @id @default(uuid())
+  tripId       String
+  trip         FtlTrip           @relation(fields: [tripId], references: [id])
+  type         ExceptionType
+  severity     ExceptionSeverity @default(MEDIUM)
+  message      String
+  location     String?
+  status       ExceptionStatus   @default(OPEN)
+  resolvedAt   DateTime?
+  resolvedNote String?
+  detectedAt   DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@map("trip_exceptions")
+}
+
+// ── POD & DOCUMENTATION ──────────────────────────────────────────────────────
+
+enum PODStatus {
+  PENDING
+  CAPTURED
+  VERIFIED
+  DISPUTED
+}
+
+model TripPOD {
+  id            String    @id @default(uuid())
+  tripId        String    @unique
+  trip          FtlTrip   @relation(fields: [tripId], references: [id])
+  receiverName  String?
+  receiverPhone String?
+  eSignatureUrl String?
+  imageUrls     String[]
+  lrNumber      String?
+  ewayBillNo    String?
+  capturedAt    DateTime?
+  verifiedAt    DateTime?
+  status        PODStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("trip_pods")
+}
+
+// ── BILLING ──────────────────────────────────────────────────────────────────
+
+enum InvoiceStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  DISPUTED
+  PAID
+  CANCELLED
+}
+
+model FtlInvoice {
+  id             String        @id @default(uuid())
+  invoiceNumber  String        @unique
+  tripId         String        @unique
+  trip           FtlTrip       @relation(fields: [tripId], references: [id])
+  vendorId       String
+  vendor         Company       @relation(fields: [vendorId], references: [id])
+  agreedRate     Float
+  invoicedAmount Float
+  deductions     Float         @default(0)
+  deductionNote  String?
+  gstAmount      Float         @default(0)
+  finalAmount    Float
+  status         InvoiceStatus @default(SUBMITTED)
+  submittedAt    DateTime      @default(now())
+  approvedAt     DateTime?
+  disputeReason  String?
+  notes          String?
+  settlementId   String?
+  settlement     Settlement?   @relation(fields: [settlementId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@map("ftl_invoices")
+}
+
+// ── SETTLEMENT ───────────────────────────────────────────────────────────────
+
+enum SettlementStatus {
+  PENDING_PAYMENT
+  PROCESSING
+  PAID
+  FAILED
+}
+
+enum PaymentMethod {
+  NEFT
+  RTGS
+  IMPS
+  CHEQUE
+  UPI
+}
+
+model Settlement {
+  id               String           @id @default(uuid())
+  settlementNumber String           @unique
+  vendorId         String
+  vendor           Company          @relation(fields: [vendorId], references: [id])
+  totalAmount      Float
+  paymentMethod    PaymentMethod    @default(NEFT)
+  bankRef          String?
+  status           SettlementStatus @default(PENDING_PAYMENT)
+  approvedAt       DateTime?
+  paidAt           DateTime?
+  notes            String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  invoices FtlInvoice[]
+
+  @@map("settlements")
+}
+
+// ── ACTIVITY LOG ─────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@map("activity_logs")
+}

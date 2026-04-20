@@ -12,32 +12,97 @@ const COLORS = ['#F59E0B', '#60A5FA', '#A78BFA', '#4ADE80', '#F87171', '#94A3B8'
 
 const MOCK = {
   summary: {
-    activeTrips: 34, indentsPending: 12, openRFQs: 8,
-    tripsDeliveredToday: 5, podPending: 9, invoicesPending: 14,
-    exceptionsOpen: 3, onTimeRate: 91,
+    activeTrips: 34,
+    shipmentsPending: 12,
+    openRFQs: 8,
+    deliveriesToday: 5,
+    podPending: 9,
+    invoicesPending: 14,
+    exceptionsOpen: 3,
+    onTimeRate: 91,
   },
+
   tripsByStatus: [
-    { status: 'IN_TRANSIT', _count: 34 }, { status: 'AT_PICKUP', _count: 8 },
-    { status: 'AT_DELIVERY', _count: 5 }, { status: 'DELIVERED', _count: 112 },
+    { status: 'IN_TRANSIT', _count: 34 },
+    { status: 'AT_PICKUP', _count: 8 },
+    { status: 'AT_DELIVERY', _count: 5 },
+    { status: 'DELIVERED', _count: 112 },
     { status: 'DELAYED', _count: 3 },
   ],
+
   weeklyTrips: [
-    { day: 'Mon', trips: 18 }, { day: 'Tue', trips: 24 }, { day: 'Wed', trips: 21 },
-    { day: 'Thu', trips: 29 }, { day: 'Fri', trips: 26 }, { day: 'Sat', trips: 14 }, { day: 'Sun', trips: 9 },
+    { day: 'Mon', trips: 18 },
+    { day: 'Tue', trips: 24 },
+    { day: 'Wed', trips: 21 },
+    { day: 'Thu', trips: 29 },
+    { day: 'Fri', trips: 26 },
+    { day: 'Sat', trips: 14 },
+    { day: 'Sun', trips: 9 },
   ],
+
   recentTrips: [
-    { id: '1', tripNumber: 'TRIP-2025-0841', origin: 'Mumbai', dest: 'Delhi', status: 'IN_TRANSIT', driver: 'Rajan Kumar', eta: '2h 30m' },
-    { id: '2', tripNumber: 'TRIP-2025-0840', origin: 'Pune', dest: 'Bangalore', status: 'AT_PICKUP', driver: 'Suresh Yadav', eta: '—' },
-    { id: '3', tripNumber: 'TRIP-2025-0839', origin: 'Delhi', dest: 'Kolkata', status: 'DELAYED', driver: 'Mohan Singh', eta: '5h 10m' },
-    { id: '4', tripNumber: 'TRIP-2025-0838', origin: 'Chennai', dest: 'Hyderabad', status: 'DELIVERED', driver: 'Anil Sharma', eta: '—' },
+    {
+      id: '1',
+      tripNumber: 'TRIP-2025-0841',
+      origin: 'Dubai',
+      dest: 'Riyadh',
+      status: 'IN_TRANSIT',
+      driver: 'Michael Brown',
+      eta: '2h 30m',
+    },
+    {
+      id: '2',
+      tripNumber: 'TRIP-2025-0840',
+      origin: 'Doha',
+      dest: 'Abu Dhabi',
+      status: 'AT_PICKUP',
+      driver: 'Ahmed Hassan',
+      eta: '—',
+    },
+    {
+      id: '3',
+      tripNumber: 'TRIP-2025-0839',
+      origin: 'Istanbul',
+      dest: 'Ankara',
+      status: 'DELAYED',
+      driver: 'Ali Demir',
+      eta: '5h 10m',
+    },
+    {
+      id: '4',
+      tripNumber: 'TRIP-2025-0838',
+      origin: 'London',
+      dest: 'Manchester',
+      status: 'DELIVERED',
+      driver: 'James Smith',
+      eta: '—',
+    },
   ],
+
   exceptions: [
-    { id: '1', tripNumber: 'TRIP-2025-0839', type: 'DELAY', message: 'Truck halted 90+ min — NH-48 near Vadodara', severity: 'HIGH' },
-    { id: '2', tripNumber: 'TRIP-2025-0835', type: 'DEVIATION', message: 'Route deviation detected — Rajkot bypass', severity: 'MEDIUM' },
-    { id: '3', tripNumber: 'TRIP-2025-0831', type: 'SLA_BREACH', message: 'Delivery SLA breached by 2h', severity: 'HIGH' },
+    {
+      id: '1',
+      tripNumber: 'TRIP-2025-0839',
+      type: 'DELAY',
+      message: 'Vehicle halted 90+ minutes — highway congestion',
+      severity: 'HIGH',
+    },
+    {
+      id: '2',
+      tripNumber: 'TRIP-2025-0835',
+      type: 'DEVIATION',
+      message: 'Route deviation detected — alternate corridor',
+      severity: 'MEDIUM',
+    },
+    {
+      id: '3',
+      tripNumber: 'TRIP-2025-0831',
+      type: 'SLA_BREACH',
+      message: 'Delivery SLA exceeded by 2 hours',
+      severity: 'HIGH',
+    },
   ],
 };
-
 const severityClass = {
   HIGH:   'text-red-400 bg-red-500/10 border-red-500/25',
   MEDIUM: 'text-amber-400 bg-amber-500/10 border-amber-500/25',

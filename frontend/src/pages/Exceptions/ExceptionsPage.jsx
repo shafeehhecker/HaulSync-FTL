@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AlertTriangle, CheckCircle, Clock, Bell } from 'lucide-react';
 import { PageHeader, StatusBadge, Spinner, EmptyState, Btn, Table } from '../../components/common';
 import api from '../../api/client';
+import { listOf, mapException } from '../../api/normalize';
 
 const MOCK = [
   { id: '1', tripNumber: 'TRIP-2025-0839', type: 'DELAY', message: 'Truck halted 90+ min at NH-48 near Vadodara', severity: 'HIGH', status: 'OPEN', detectedAt: '2025-03-24 10:45', driver: 'Mohan Singh', vehicle: 'DL-01-CD-9012' },
@@ -12,12 +13,13 @@ const MOCK = [
 ];
 
 const severityStyle = {
+  CRITICAL: 'text-red-300 bg-red-500/15 border-red-500/40',
   HIGH:   'text-red-400 bg-red-500/10 border-red-500/25',
   MEDIUM: 'text-amber-400 bg-amber-500/10 border-amber-500/25',
   LOW:    'text-blue-400 bg-blue-500/10 border-blue-500/25',
 };
 
-const typeIcon = { DELAY: '⏱', DEVIATION: '🔀', SLA_BREACH: '⚠', GPS_LOSS: '📡' };
+const typeIcon = { DELAY: '⏱', DEVIATION: '🔀', SLA_BREACH: '⚠', GPS_LOSS: '📡', HALT: '🛑', BREAKDOWN: '🔧', OTHER: '•' };
 
 export default function ExceptionsPage() {
   const [exceptions, setExceptions] = useState([]);
@@ -26,7 +28,7 @@ export default function ExceptionsPage() {
 
   useEffect(() => {
     api.get('/ftl/exceptions')
-      .then(r => setExceptions(r.data))
+      .then(r => setExceptions(listOf(r.data).map(mapException)))
       .catch(() => setExceptions(MOCK))
       .finally(() => setLoading(false));
   }, []);
@@ -69,9 +71,9 @@ export default function ExceptionsPage() {
             <EmptyState icon={CheckCircle} title="No exceptions" description="All trips are running smoothly." />
           )}
           {filtered.map(ex => (
-            <div key={ex.id} className={`card p-4 border-l-4 ${ex.severity === 'HIGH' ? 'border-l-red-500' : ex.severity === 'MEDIUM' ? 'border-l-amber-500' : 'border-l-blue-500'}`}>
+            <div key={ex.id} className={`card p-4 border-l-4 ${['HIGH','CRITICAL'].includes(ex.severity) ? 'border-l-red-500' : ex.severity === 'MEDIUM' ? 'border-l-amber-500' : 'border-l-blue-500'}`}>
               <div className="flex items-start gap-4">
-                <div className={`mt-0.5 px-2 py-0.5 rounded text-[11px] font-bold border flex-shrink-0 ${severityStyle[ex.severity]}`}>
+                <div className={`mt-0.5 px-2 py-0.5 rounded text-[11px] font-bold border flex-shrink-0 ${severityStyle[ex.severity] || severityStyle.MEDIUM}`}>
                   {ex.severity}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -80,7 +82,7 @@ export default function ExceptionsPage() {
                       <p className="text-sm font-medium text-zinc-200">{ex.message}</p>
                       <div className="flex items-center gap-3 mt-1 flex-wrap">
                         <span className="font-mono text-xs text-amber-400">{ex.tripNumber}</span>
-                        <span className="text-xs text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">{typeIcon[ex.type]} {ex.type.replace('_',' ')}</span>
+                        <span className="text-xs text-zinc-500 bg-zinc-800 px-1.5 py-0.5 rounded">{typeIcon[ex.type] || '•'} {ex.type.replace('_',' ')}</span>
                         <span className="text-xs text-zinc-500">{ex.driver} · {ex.vehicle}</span>
                         <span className="flex items-center gap-1 text-xs text-zinc-600"><Clock size={10} /> {ex.detectedAt}</span>
                       </div>

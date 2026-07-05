@@ -1,21 +1,19 @@
-FROM node:18-slim
-
+# ── Build stage ───────────────────────────────────────────────────────────────
+# Full install (NOT --only=production): vite, tailwind, postcss, autoprefixer and
+# @vitejs/plugin-react are devDependencies and are required to build the site.
+FROM node:18-slim AS build
 WORKDIR /app
 
-# Install OpenSSL — required by Prisma's query engine binary
-RUN apt-get update -y && \
-    apt-get install -y openssl libssl-dev ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
-
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm ci
 
 COPY . .
+RUN npm run build          # outputs static assets to /app/dist
 
-RUN mkdir -p uploads/pods
-
-RUN npx prisma generate
-
-EXPOSE 5001
-
-CMD ["node", "server.js"]
+# ── Serve stage ───────────────────────────────────────────────────────────────
+# Static files served by nginx; nginx also proxies /api + /uploads to the backend.
+FROM nginx:1.27-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

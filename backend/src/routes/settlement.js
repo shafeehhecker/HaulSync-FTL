@@ -12,7 +12,9 @@ function nextSettlementNumber() {
 }
 
 // GET /api/ftl/settlement
-router.get('/', authenticate, authorize(...FINANCE_ROLES, 'MANAGER'), async (req, res, next) => {
+// Transporters may list settlements too, scoped to their own company —
+// consistent with how billing/pod/tracking/exceptions treat TRANSPORTER.
+router.get('/', authenticate, authorize(...FINANCE_ROLES, 'MANAGER', 'TRANSPORTER'), async (req, res, next) => {
   try {
     const { page = 1, limit = 20, status, vendorId } = req.query;
     const skip  = (page - 1) * limit;
@@ -20,6 +22,9 @@ router.get('/', authenticate, authorize(...FINANCE_ROLES, 'MANAGER'), async (req
       ...(status   && { status }),
       ...(vendorId && { vendorId }),
     };
+    if (req.user.role === 'TRANSPORTER') {
+      where.vendorId = req.user.companyId;
+    }
     const [settlements, total] = await Promise.all([
       prisma.settlement.findMany({
         where, skip: +skip, take: +limit,
@@ -36,7 +41,7 @@ router.get('/', authenticate, authorize(...FINANCE_ROLES, 'MANAGER'), async (req
 });
 
 // GET /api/ftl/settlement/:id
-router.get('/:id', authenticate, authorize(...FINANCE_ROLES, 'MANAGER'), async (req, res, next) => {
+router.get('/:id', authenticate, authorize(...FINANCE_ROLES, 'MANAGER', 'TRANSPORTER'), async (req, res, next) => {
   try {
     const settlement = await prisma.settlement.findUnique({
       where: { id: req.params.id },
@@ -46,6 +51,9 @@ router.get('/:id', authenticate, authorize(...FINANCE_ROLES, 'MANAGER'), async (
       },
     });
     if (!settlement) return res.status(404).json({ message: 'Settlement not found' });
+    if (req.user.role === 'TRANSPORTER' && settlement.vendorId !== req.user.companyId) {
+      return res.status(403).json({ message: 'Access denied: insufficient permissions' });
+    }
     res.json(settlement);
   } catch (err) { next(err); }
 });

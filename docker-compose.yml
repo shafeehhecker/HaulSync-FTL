@@ -10,7 +10,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - "5433:5432" # host:container — host 5432 was already in use; backend still uses db:5432 internally
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-haulsync}"]
       interval: 5s
@@ -28,7 +28,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://${DB_USER:-haulsync}:${DB_PASSWORD:-haulsync_secret}@db:5432/${DB_NAME:-haulsync_ftl}
-      JWT_SECRET: ${JWT_SECRET:-change_me_in_production_32chars}
+      JWT_SECRET: ${JWT_SECRET:-change_me_in_production_min_32_characters}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
       PORT: 5001
       NODE_ENV: ${NODE_ENV:-production}
@@ -45,18 +45,13 @@ services:
       - "5001:5001"
     volumes:
       - uploads_data:/app/uploads
-    # FIX 1: Use `migrate dev` so it creates migrations/ if they don't exist yet.
-    #        Falls back to `migrate deploy` on subsequent runs (idempotent).
-    #        Seed is guarded inside seed.js — safe to re-run.
+    # Migrations ship in the repo (prisma/migrations/0_init), so `migrate deploy`
+    # is the correct, idempotent production path — no `migrate dev`, no shadow DB,
+    # no shell conditional to get wrong. Seed is guarded inside seed.js (skips if
+    # data already exists), so it's safe to re-run on every restart.
     command: >
       sh -c "
-        if [ ! -d 'prisma/migrations' ] || [ -z \"$(ls -A prisma/migrations 2>/dev/null)\" ]; then
-          echo '>>> No migrations found — running prisma migrate dev to create them...' &&
-          npx prisma migrate dev --name init --skip-seed;
-        else
-          echo '>>> Migrations found — running prisma migrate deploy...' &&
-          npx prisma migrate deploy;
-        fi &&
+        npx prisma migrate deploy &&
         node prisma/seed.js &&
         node server.js
       "

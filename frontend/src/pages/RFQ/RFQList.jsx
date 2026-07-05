@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Truck, Plus, ChevronDown, ChevronUp, Award, Clock, CheckCircle } from 'lucide-react';
 import { PageHeader, StatusBadge, Spinner, EmptyState, Btn, Modal, FormField, Table, InfoBanner } from '../../components/common';
 import api from '../../api/client';
+import { listOf, mapRfq, VEHICLE_TYPE_OPTIONS } from '../../api/normalize';
 
 const MOCK_RFQS = [
   {
@@ -84,7 +85,7 @@ export default function RFQList() {
 
   useEffect(() => {
     api.get('/ftl/rfqs')
-      .then(r => setRfqs(r.data))
+      .then(r => setRfqs(listOf(r.data).map(mapRfq)))
       .catch(() => setRfqs(MOCK_RFQS))
       .finally(() => setLoading(false));
   }, []);
@@ -141,10 +142,24 @@ function CreateRFQModal({ open, onClose, onCreated }) {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const { data } = await api.post('/ftl/rfqs', form);
-      onCreated(data);
+      // The API expects schema field names (originCity/destCity/vehicleType enum),
+      // not the display names used in this form's state.
+      const payload = {
+        originCity: form.origin,
+        originState: '',
+        destCity: form.destination,
+        destState: '',
+        vehicleType: form.truckType,
+        quantity: 1,
+        loadingDate: new Date().toISOString(),
+        awardStrategy: form.awardStrategy,
+        rfqWindowMinutes: form.rfqWindowMinutes,
+        minSLAScore: form.minSLAScore,
+      };
+      const { data } = await api.post('/ftl/rfqs', payload);
+      onCreated(mapRfq(data));
     } catch {
-      onCreated({ id: Date.now().toString(), rfqNumber: `RFQ-2025-${String(Math.floor(Math.random()*1000)).padStart(4,'0')}`, lane: `${form.origin} → ${form.destination}`, ...form, status: 'OPEN', bidsCount: 0, closesAt: 'TBD', bids: [] });
+      onCreated(mapRfq({ id: Date.now().toString(), rfqNumber: `RFQ-2025-${String(Math.floor(Math.random()*1000)).padStart(4,'0')}`, lane: `${form.origin} → ${form.destination}`, truckType: form.truckType, awardStrategy: form.awardStrategy, status: 'OPEN', bidsCount: 0, closesAt: 'TBD', bids: [] }));
     } finally { setLoading(false); }
   };
 
@@ -159,7 +174,7 @@ function CreateRFQModal({ open, onClose, onCreated }) {
           <FormField label="Truck Type" required>
             <select className="input-field" value={form.truckType} onChange={e => set('truckType', e.target.value)}>
               <option value="">Select</option>
-              {['32FT SXL','32FT MXL','20FT MXL','20FT SXL','Container 20ft','Container 40ft'].map(t => <option key={t}>{t}</option>)}
+              {VEHICLE_TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </FormField>
           <FormField label="Award Strategy">

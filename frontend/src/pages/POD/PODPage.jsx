@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Package, Camera, CheckCircle } from 'lucide-react';
 import { PageHeader, StatusBadge, Spinner, EmptyState, Btn, Table } from '../../components/common';
 import api from '../../api/client';
+import { listOf, mapPod } from '../../api/normalize';
 
 const MOCK = [
   { id: '1', tripNumber: 'TRIP-2025-0838', origin: 'Chennai', dest: 'Hyderabad', driver: 'Anil Sharma', status: 'VERIFIED', capturedAt: '2025-03-24 14:30', lrNumber: 'LR-2025-0838', ewayBill: 'EWB-291234567890', podImages: 2, receiverName: 'Rajesh Mehta' },
@@ -18,7 +19,7 @@ export default function PODPage() {
 
   useEffect(() => {
     api.get('/ftl/pod')
-      .then(r => setPods(r.data))
+      .then(r => setPods(listOf(r.data).map(mapPod)))
       .catch(() => setPods(MOCK))
       .finally(() => setLoading(false));
   }, []);

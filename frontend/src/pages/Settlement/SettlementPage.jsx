@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { DollarSign, CheckCircle, Clock, Send } from 'lucide-react';
 import { PageHeader, StatusBadge, Spinner, EmptyState, Btn, Table } from '../../components/common';
 import api from '../../api/client';
+import { listOf, mapSettlement } from '../../api/normalize';
 
 const MOCK = [
   { id: '1', settlementNumber: 'SETL-2025-0201', vendor: 'FastMove Transport', invoiceCount: 3, totalAmount: 54800, status: 'PENDING_PAYMENT', approvedAt: '2025-03-24', paymentMethod: 'NEFT', bankRef: '—' },
@@ -16,7 +17,7 @@ export default function SettlementPage() {
 
   useEffect(() => {
     api.get('/ftl/settlement')
-      .then(r => setSettlements(r.data))
+      .then(r => setSettlements(listOf(r.data).map(mapSettlement)))
       .catch(() => setSettlements(MOCK))
       .finally(() => setLoading(false));
   }, []);

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FileText, Plus, Filter } from 'lucide-react';
 import { PageHeader, StatusBadge, Spinner, EmptyState, Btn, Modal, FormField, Table } from '../../components/common';
 import api from '../../api/client';
+import { listOf, mapIndent, VEHICLE_TYPE_OPTIONS } from '../../api/normalize';
 
 const MOCK_INDENTS = [
   { id: '1', indentNumber: 'IND-2025-0101', lane: 'Mumbai → Delhi', truckType: '32FT SXL', quantity: 2, contractType: 'CONTRACT', status: 'PUBLISHED', createdAt: '2025-03-20', vendor: 'Swift Logistics' },
@@ -10,8 +11,6 @@ const MOCK_INDENTS = [
   { id: '4', indentNumber: 'IND-2025-0098', lane: 'Chennai → Hyderabad', truckType: '20FT MXL', quantity: 1, contractType: 'SPOT', status: 'COMPLETED', createdAt: '2025-03-17', vendor: 'FastMove Transport' },
 ];
 
-const TRUCK_TYPES = ['32FT SXL', '32FT MXL', '20FT MXL', '20FT SXL', 'Container 20ft', 'Container 40ft', 'Flatbed', 'Refrigerated'];
-
 export default function IndentingList() {
   const [indents, setIndents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +18,7 @@ export default function IndentingList() {
 
   useEffect(() => {
     api.get('/ftl/indents')
-      .then(r => setIndents(r.data))
+      .then(r => setIndents(listOf(r.data).map(mapIndent)))
       .catch(() => setIndents(MOCK_INDENTS))
       .finally(() => setLoading(false));
   }, []);
@@ -76,11 +75,24 @@ function CreateIndentModal({ open, onClose, onCreated }) {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const { data } = await api.post('/ftl/indents', form);
-      onCreated(data);
+      // The API expects schema field names (originCity/destCity/vehicleType enum),
+      // not the display names used in this form's state.
+      const payload = {
+        originCity: form.origin,
+        originState: '',
+        destCity: form.destination,
+        destState: '',
+        vehicleType: form.truckType,
+        quantity: form.quantity,
+        contractType: form.contractType,
+        loadingDate: new Date().toISOString(),
+        notes: form.notes,
+      };
+      const { data } = await api.post('/ftl/indents', payload);
+      onCreated(mapIndent(data));
     } catch {
       // mock success
-      onCreated({ id: Date.now().toString(), indentNumber: `IND-2025-${String(Math.floor(Math.random()*1000)).padStart(4,'0')}`, lane: `${form.origin} → ${form.destination}`, ...form, status: 'PENDING', createdAt: new Date().toISOString().slice(0,10), vendor: '—' });
+      onCreated(mapIndent({ id: Date.now().toString(), indentNumber: `IND-2025-${String(Math.floor(Math.random()*1000)).padStart(4,'0')}`, lane: `${form.origin} → ${form.destination}`, truckType: form.truckType, quantity: form.quantity, contractType: form.contractType, status: 'PENDING', createdAt: new Date().toISOString().slice(0,10), vendor: '—' }));
     } finally {
       setLoading(false);
     }
@@ -101,7 +113,7 @@ function CreateIndentModal({ open, onClose, onCreated }) {
           <FormField label="Truck Type" required>
             <select className="input-field" value={form.truckType} onChange={e => set('truckType', e.target.value)}>
               <option value="">Select type</option>
-              {TRUCK_TYPES.map(t => <option key={t}>{t}</option>)}
+              {VEHICLE_TYPE_OPTIONS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </FormField>
           <FormField label="Quantity" required>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Receipt, CheckCircle, AlertCircle, Plus, Filter } from 'lucide-react';
 import { PageHeader, StatusBadge, Spinner, EmptyState, Btn, Table } from '../../components/common';
 import api from '../../api/client';
+import { listOf, mapInvoice } from '../../api/normalize';
 
 const MOCK = [
   { id: '1', invoiceNumber: 'INV-2025-0411', tripNumber: 'TRIP-2025-0838', vendor: 'FastMove Transport', agreedRate: 18500, invoicedAmount: 18500, deductions: 0, finalAmount: 18500, status: 'APPROVED', submittedAt: '2025-03-24', reconciled: true },
@@ -18,7 +19,7 @@ export default function BillingPage() {
 
   useEffect(() => {
     api.get('/ftl/billing/invoices')
-      .then(r => setInvoices(r.data))
+      .then(r => setInvoices(listOf(r.data).map(mapInvoice)))
       .catch(() => setInvoices(MOCK))
       .finally(() => setLoading(false));
   }, []);

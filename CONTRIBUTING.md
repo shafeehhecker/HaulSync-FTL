@@ -1,98 +1,141 @@
-# Contributing to HaulSync TOS FTL
+# Contributing to HaulSync FTL
 
-Thank you for helping improve HaulSync! This guide covers everything you need to get started.
+Thank you for your interest in helping democratize logistics technology. We're building something meaningful here, and your engagement — whether as a contributor, adopter, or honest skeptic — matters.
 
 ---
 
-## 🛠️ Development Setup
+## 🏗️ Current Status: Active Development
+
+HaulSync is in active development across eight modules, each at different maturity stages. Right now, we're **not accepting external code contributions**, but we're building toward that. Here's why and what it means:
+
+- **Modules are in rapid iteration** — architecture is still settling, APIs are stabilizing, and the shared patterns across the ecosystem are clarifying
+- **We're validating operational assumptions** — talking to carriers, brokers, fleet operators, and auto suppliers to make sure what we build actually solves real problems
+- **Documentation needs to catch up** — getting a new contributor up to speed requires docs we're still writing
+- **We want the first wave of open contributions to succeed** — and right now, the friction would be too high
+
+**This will change.** . We'll announce it here and in every module's README.
+
+---
+
+## 🚀 How to Engage Right Now
+
+We can't accept PRs yet, but there are high-impact ways to get involved:
+
+### 1. **Fork and Deploy**
+The entire HaulSync ecosystem is MIT-licensed and self-hostable. Use it. Modify it. Run it on your own infrastructure. Prove out concepts. This is exactly what the open-source framing is for.
 
 ```bash
-git clone https://github.com/your-org/haulsync-tos-ftl.git
-cd haulsync-tos-ftl
-
-# Backend
-cd backend && cp .env.example .env && npm install
-npx prisma migrate dev && node prisma/seed.js
-npm run dev
-
-# Frontend (new terminal)
-cd frontend && cp .env.example .env && npm install
-npm run dev
+git clone https://github.com/shafeehhecker/HaulSync-FTL
+cd HaulSync-FTL
+docker-compose up
 ```
 
----
+If you build something interesting on top of HaulSync, tell us. We'd genuinely like to know.
 
-## 🌿 Branch Naming
+### 2. **Report Issues and Edge Cases**
+Find bugs? Weird behavior? A workflow that breaks? Open an issue on the relevant module repository with:
+- **What you were trying to do** — context matters
+- **What happened** — the exact error or unexpected behavior
+- **Your environment** — Node version, OS, whether you're self-hosted or demo
+- **Steps to reproduce** — we need to see it too
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| Feature | `feature/<slug>` | `feature/l2-fallback-logic` |
-| Bug fix | `fix/<slug>` | `fix/pod-upload-crash` |
-| Docs | `docs/<slug>` | `docs/gps-integration-guide` |
-| Chore | `chore/<slug>` | `chore/upgrade-prisma-5` |
+We read every issue. Even if we can't fix it immediately, we log it and it influences the roadmap.
 
----
+### 3. **Suggest Features — But Test Them First**
+Before opening a feature request, try solving it in a fork. Does your idea actually work? Does it break something else? The best feature requests come with:
+- **The operational problem you hit** — what workflow is broken, and why
+- **Your proposed solution** — the specific change you'd make
+- **How you validated it** — ideally, a branch where you prototyped it
 
-## 📝 Commit Style
+We're especially interested in:
+- Industry-specific workflows we haven't seen yet (freight corridors, carrier types, compliance regimes)
+- Performance bottlenecks at scale
+- Self-hosting infrastructure improvements
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+### 4. **Document What You Learn**
+If you deploy a HaulSync module and figure something out — a config pattern that works, a performance tuning trick, a deployment topology — document it and share it. Wikis, blog posts, PRs to our docs, community Slack threads. The knowledge compounds.
 
-```
-feat: add GPS webhook receiver for Vamosys
-fix: resolve L1 award race condition on concurrent bids
-docs: add e-way bill setup guide
-chore: bump socket.io to 4.7.4
-refactor: extract rate engine into standalone service
-test: add unit tests for L1/L2 ranking logic
-```
-
----
-
-## 🔀 Pull Request Process
-
-1. Fork the repo and create your branch from `main`
-2. Run `npm run dev` and verify your changes work end-to-end
-3. If adding a route, update `docs/API.md` with the new endpoint
-4. If touching the Prisma schema, include a migration: `npx prisma migrate dev --name your-change`
-5. Open a PR — fill in the template fully
-6. PRs require at least one review before merge
-
- IMPORTANT NOTE : AI PULL REQUESTS IS HIGHLY DISCOURAGED AS THIS IS A SINGLE DEVELOPER PROJECT
+### 5. **Join the Conversation**
+- **Follow the roadmap** — watch the repository and GitHub Discussions to see what's coming
+- **Validate the direction** — if you work in logistics, you know whether our assumptions are right. Tell us
+- **Challenge us** — what are we missing? What would actually move the needle for your operations?
 
 ---
 
-## 📁 Where Things Live
+## 📋 What We're Looking For (For Later)
 
-| What | Where |
-|------|-------|
-| New API route | `backend/src/routes/<module>.js` + register in `server.js` |
-| New Prisma model | `backend/prisma/schema.prisma` + migration |
-| New frontend page | `frontend/src/pages/<Module>/` + route in `App.jsx` + nav item in `Layout.jsx` |
-| Shared UI component | `frontend/src/components/common/index.jsx` |
-| GPS provider adapter | `backend/src/integrations/gps/<provider>.js` |
-| Environment variable | Add to both `.env.example` files + `docker-compose.yml` |
+When we do open contributions, here's what we'll prioritize:
+
+✅ **Wanted:**
+- Bug fixes with tests
+- Performance improvements with benchmarks
+- Documentation improvements and tutorials
+- Adapter implementations for new GPS/ELD/OEM providers (following the established `ISourceAdapter` pattern)
+- Translations and localization
+- Infrastructure improvements (Docker, deployment, monitoring)
+- Module-specific features that don't break the shared architecture
+
+❌ **Not wanted (yet):**
+- Large architectural changes — we're still settling the patterns
+- New modules without deep consensus on the problem they solve
+- Dependencies that fragment the ecosystem (each module picks its own ORM, state library, etc.)
+- Features that only work in one-module deployments
 
 ---
 
-## 🚫 What We Won't Accept
+## 🏛️ Code of Conduct
 
-- Breaking changes to existing API contracts without a migration path
-- Removing the mock/fallback GPS mode (required for offline development)
-- Changes that break the `docker compose up -d` one-command start
-- Hardcoded credentials or secrets of any kind
+Be respectful. We're building for an industry where people's livelihoods are on the line — logistics isn't abstract. Disagreements happen; bad faith doesn't.
 
 ---
 
-## 🐛 Reporting Bugs
+## 🔐 Security
 
-Open a GitHub Issue with:
+Found a security vulnerability? **Do not open a public issue.** Email `security@haulsync.io` with:
+- The vulnerability description
 - Steps to reproduce
-- Expected vs actual behaviour
-- Node.js and Docker versions
-- Relevant logs (`docker compose logs backend`)
+- Potential impact
+- Your suggested fix (if you have one)
+
+We'll respond within 48 hours and work with you on disclosure timing.
 
 ---
 
-## 📜 License
+## 📚 Resources
 
-By contributing, you agree your contributions are licensed under the MIT License.
+- **[HaulSync Architecture Docs](./docs/ARCHITECTURE.md)** — how modules integrate
+- **[Deployment Guide](./docs/DEPLOYMENT.md)** — self-hosting setup
+- **[API Reference](./docs/API.md)** — standardized schemas across modules
+  
+---
+
+## 💌 When Contributions Open
+
+We'll update this file, email our mailing list, and make noise across all channels. Here's what that moment will look like:
+
+1. **Per-module CONTRIBUTING.md** — specific setup and testing for each module
+2. **Good-first-issue labels** — curated starting points for newcomers
+3. **Contributor swag** — we take care of our people
+4. **Code review SLA** — PRs will get feedback within one week
+5. **Mentorship pairing** — your first contribution won't be alone
+
+---
+
+## 🙏 Why We're Doing This Carefully
+
+The logistics industry doesn't have a lot of trust in vendors. You're right to be skeptical of new platforms. What makes HaulSync different isn't just the code — it's the **governance**: an ecosystem where you own your stack, where features don't require you to upgrade your license, and where the core technology is read-auditable by anyone.
+
+We're taking the same care with how we build community. We're not trying to move fast and break things — we're trying to build something durable that stays true to the founding mission: democratize logistics technology, no vendor lock-in, no opaque pricing.
+
+---
+
+## 📞 Questions?
+
+- **Deployment help** — open an issue or check the docs
+- **Business/partnership** — Reach us through Linkedin 
+
+---
+
+*The HaulSync ecosystem is built in the open, for the people who actually run supply chains. Thanks for being part of that vision.*
+
+⚡ **Your Freight. Fully Synced.**
